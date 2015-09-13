@@ -148,7 +148,7 @@ int main(int argc, char* argv[])
 {
     int i;
     if (argc == 1) {
-        printf("usage: %s name1 name2 ...\n", argv[0]);
+        printf("usage: %s <whitelisted process>\n", argv[0]);
         return 1;
     }
 
