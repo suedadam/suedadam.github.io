@@ -1,0 +1,171 @@
+= Is your router part of a botnet?
+
+Recently the amount of compromised routers have been increasing tremendously due to "hacking group" called "LizardSquad" notoriously known for their large DDoS attacks against PSN (Playstation Network) and Xbox Live. Their bot and C&C was "leaked" to Gthub for all to see and use (https://github.com/gh0std4ncer/lizkebab). In this article we will be talking about what to do when your router is compromised but first, let's go over the basics -
+
+The bot contained the following commands -
+
+ PING
+ GETLOCALIP
+ SCANNER ON/OFF
+ HOLD
+ JUNK
+ UDPTCP
+ KILLATTK
+ LOLNOGTFO
+
+Let's briefly go over what each of these commands do.
+
+"PING" - As you would expect, this command responds with "PONG!" to the C&C.
+
+"GETLOCALIP" - This command responds to the C&C with the router's local IP. 
+
+"SCANNER ON/OFF" - This activates the telnet scanner/bruteforcer (a/k/a "StartTheLelz"). What does "StartTheLelz" do? It essentially brute forces/scans random IPs for the usernames and passwords that were prviously assigned in the variables "usernames" and "passwords. 
+``` C
+char *usernames[] = {"root\0", "\0", "admin\0", "user\0", "login\0", "guest\0"};
+char *passwords[] = {"root\0", "\0", "toor\0", "admin\0", "user\0", "guest\0", "login\0", "changeme\0", "1234\0", "12345\0", "123456\0", "default\0", "pass\0", "password\0"};
+
+```
+
+Once into a system it executes the command "sh" followed by 
+
+ /bin/busybox;echo -e '\\147\\141\\171\\146\\147\\164'
+ 
+What does this do? Basically what this command does is respond with a string only on busybox machines, this prevents it from getting any machines that don't have busybox on it.
+
+Output on a busybox machine -
+
+ root@b33f1b831e1d:~# echo -e '\\147\\141\\171\\146\\147\\164'
+gayfgt
+root@b33f1b831e1d:~# 
+ 
+
+Output on a non-busybox machine -
+
+ root@b33f1b831e1c:~# echo -e '\\147\\141\\171\\146\\147\\164'
+\147\141\171\146\147\164
+root@b33f1b831e1c:~# 
+
+What is this random string? This is a Octal string with backslash escapes. The argument "-e" in the echo command (according to the man file for echo) enables the following -
+
+ -e
+enable interpretation of backslash escapes
+
+You can play around with Octal strings here - https://encoder.internetwache.org/
+
+If the bot responds with the correct string "gayfgt" then it reports it to the C&C and the C&C saves it to output.txt in the format of "IP:username:password)
+
+"HOLD" - This activates the "HOLD" DoS attack
+
+"JUNK" - This activates the "JUNK" DoS attack
+
+"UDP" - This activates a UDP DoS attack
+
+"TCP" - This activates a TCP DoS attack method that allows you to set numerous options such as the destination port (or randomize it), a netmask to spoof it by (or not spoof it), the flags of the TCP packet (can be used to bypass some attack mitigation systems), the packet size (can be used to bypass some mitigation systems), and a poll interval for the attack. 
+What do I mean by a poll interval? Essentially the attack is sent every X seconds in intervals for the max time of the attack, this uses less resources on the bot's side and would still have a bad outcome on the attacked servers end, an exampe would be bursts of the attack every 10 seconds for 300 seconds.
+
+"KILLATTK" - Kills any ongoing attacks
+
+"LOLNOGTFO" - Kills the bot.
+
+
+#### How do I protect my router from this!?
+
+It's quite simple, change your router's credentials away from the default credentials and close off port 23 from public access. It takes like 5 minutes and saves you a lot of trouble in the future!
+
+#### What if they're already in my router!? 
+
+If they're already in your router then you can attempt to do numerous things to get rid of them, one of which is find the process and kill it. I've written this small script to kill running programs that aren't necessary by the system itself (not extremely accurate nor the best way of going about it) -
+
+``` C
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <unistd.h>
+#include <signal.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+pid_t proc_find(const char* name) 
+{
+    DIR* dir;
+    struct dirent* ent;
+    char buf[512];
+    char buff[512];
+
+    long  pid;
+    char pname[100] = {0,};
+    char state;
+    FILE *fp=NULL; 
+    FILE *cmdline=NULL;
+    if (!(dir = opendir("/proc"))) {
+        perror("can't open /proc");
+        return -1;
+    }
+
+    while((ent = readdir(dir)) != NULL) {
+        long lpid = atol(ent->d_name);
+        if(lpid < 0)
+            continue;
+        snprintf(buf, sizeof(buf), "/proc/%ld/stat", lpid);
+        fp = fopen(buf, "r");
+
+        if (fp) {
+	    printf("%ld:%s\n", lpid, pname);
+            if ( (fscanf(fp, "%ld (%[^)]) %c", &pid, pname, &state)) != 3 ){
+                printf("fscanf failed \n");
+                fclose(fp);
+                closedir(dir);
+                return -1; 
+            }
+            if (!strcmp(pname, name)) {
+		printf("Whitelisted!\n");
+		continue;
+            } else {
+                long size ;
+                snprintf(buff, sizeof(buff), "/proc/%ld/cmdline", lpid);
+		cmdline = fopen(buff, "r+");
+		int count = 0;
+		while(fgetc(cmdline) != EOF)
+		{
+			count++;
+		}
+                if (count > 10) { kill(pid, SIGTERM); }
+                printf("%ld:%s:%lld\n", lpid, pname, count);
+            }
+            fclose(cmdline);
+            fclose(fp);
+        }
+    }
+
+
+closedir(dir);
+return -1;
+}
+
+
+int main(int argc, char* argv[]) 
+{
+    int i;
+    if (argc == 1) {
+        printf("usage: %s name1 name2 ...\n", argv[0]);
+        return 1;
+    }
+
+    for( i = 1; i < argc; ++i) {
+        pid_t pid = proc_find(argv[i]);
+	
+    }
+
+    return 0;
+}
+```
+
+###### Compiling and running
+
+Compile - `gcc main.c`
+
+Running - `./a.out < whitelisted process >`
+
+
+I'll be adding more to this article as I see fit and when I get less lazy. 
