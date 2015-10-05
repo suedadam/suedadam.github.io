@@ -1,0 +1,95 @@
+= Let's talk about mitigation!
+
+Our last post was about (D)DoS attacks and LizardSquad so let's focus a bit more towards mitigation and stopping DDoS attacks. 
+
+First let's cover some basics -
+
+(D)DoS attacks can attack you in numerous ways, volumetricly or trying to bypass your mitigation (or both) so what you need to know to start is that no matter how "simple" the attack might be, if it's larger than your uplink then you won't be able to mitigate it and it's cheaper to launch a DDoS attack than it is to mitigate one. 
+
+For this let's talk about some basic methods of DDoS mitigation -
+
+##### UDP amplified attacks
+
+These aren't only annoying to deal with because they come from a lot of IPs but they're annoying because they're extremely large due to high amplification factors. (https://www.us-cert.gov/ncas/alerts/TA14-017A) NTP still having the largest amplification factor and the amplification method used by the notorious "DerpTrolling" when they attacked CloudFlare. 
+
+###### Let's block some NTP attacks!
+
+First you'll need to load up the ixgbe kernel drivers - 
+
+Open up the ixgbe config file `/etc/modprobe.d/ixgbe.conf` and add the following to it `FdirPballoc=3,3,3,3`.
+
+After doing so, reload the driver. 
+
+ rmmod ixgbe
+ modprobe ixgbe
+ 
+Now enable the NIC hardware filtering support -
+ 
+ ethtool -K eth ntuple on
+ 
+Finally, let's add the rules!
+
+ ethtool --config-ntuple eth flow-type udp4 src-port 123 action -1
+ 
+You can confirm that the rule has been placed correctly by running
+
+ ethtool --show-ntuple eth
+ 
+
+###### Why don't we just block it with IPTables?
+
+IPTables is just another program, it'll affect the CPU if you get a large enough attack. Hardware filtering will block the NTP attack without impacting the CPU at all.
+
+
+###### How do I know if the attack was blocked? 
+
+You can check how many packets were rejected by running
+
+ ethtool -S eth | grep fdir
+ 
+The "fdir_match" result will be how many packets were rejected
+
+###### What about other attacks!?
+
+Some other attacks may be difficult to block with hardware filtering, but not impossible. Here are some additional rules that you can place to block some other UDP amplification methods!
+
+ ethtool --config-ntuple eth flow-type udp4 src-port 161 action -1
+ ethtool --config-ntuple eth flow-type udp4 src-port 137 action -1
+ ethtool --config-ntuple eth flow-type udp4 src-port 19 action -1
+ ethtool --config-ntuple eth flow-type udp4 src-port 1900 action -1
+ ethtool --config-ntuple eth flow-type udp4 src-port 520 action -1
+ 
+###### What about TCP attacks!?
+
+TCP attacks aren't always amplified so it may be harder to block as there isn't one vector you can just block; however, there are some TCP amplification methods so you can block those easily with the following -
+
+ ethtool --config-ntuple eth flow-type tcp4 src-port 179 action -1
+ 
+Other TCP attacks are generally harder to mitigate as they randomize fields such as the port and IP (spoofed attacks) so we have to go away from hardware filtering and get into some software. 
+
+#### Let's mitigate TCP attacks!
+
+First let's load up the software.
+
+ cd /usr/include/net
+ wget https://raw.githubusercontent.com/luigirizzo/netmap/master/sys/net/netmap_user.h 
+ wget https://raw.githubusercontent.com/luigirizzo/netmap/master/sys/ net / netmap.h
+ 
+ cd /usr/src
+ git clone https://github.com/luigirizzo/netmap-ipfw.git 
+ cd netmap-ipfw 
+ make
+ 
+Now that the software is all installed, let's get ready to add some rules!
+
+First we need to start it up with `./kipfw netmap: eth1 netmap: eth2`
+
+Now let's add some rules!
+
+This first rule will block most booters and their spoofed TCP attacks
+
+ ./ipfw add deny tcp from any to any tcpdatalen 0
+ 
+This rule blocks all traffic with the length as "0", this helps because most public attacks scripts don't fill their packets with data!
+
+I'll update this more as I become less lazy!
