@@ -1,0 +1,28 @@
+= Logitech G430 on mac
+
+
+So, I just got the Logitech G430 headset (pretty comfortable and great in quality!) but the only thing that is bad about it is that I lack the support for 7.1 surround sound and that Logitech didn't properly think through their design for a dual 3.5mm to USB converter. 
+You might be saying "What could be so bad wiht that? It lets you use both the mic and headset while using your usb port!" Well...yes, in theory it would! In practicality it is simply just a limiting factor and when you're trying to use both at the same time it stutters and turns to static (yes I've tried to change the Format down to fix it, it only delayed the inevtiable).
+
+So let's talk about how to fix it!
+
+##### Easy fix 
+
+While this is a really simple fix, it does the job great and I'm sad that I hadn't thought of it sooner (I'm going to blame the fact that I'm very lazy on weekends). 
+
+Go ahead and change it from having both the headset and the MIC plugged into the USB converter to having the *MIC ONLY* connected to the USB converter and then your headset 3.5mm cord to the 3.5mm port on your computer. Now you have two channels!
+
+Now go ahead and go to your sound settings and start tuning it, I made mine the following:
+
+image::https://i.imgur.com/EgVD4bM.png[]
+image::https://i.imgur.com/V0AWuhc.png[]
+
+and at the Audio MIDI Setup:
+
+image::https://i.imgur.com/yc5pNLa.png[]
+image::https://i.imgur.com/3CvJq56.png[]
+
+
+I hope that this post makes sure that you don't go a few days with having static interruptions like I did!
+
+##### Props to AirwaveTV for having awesome music to type this to! (https://www.youtube.com/watch?v=2URcxaXYqGY)
