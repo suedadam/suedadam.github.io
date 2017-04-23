@@ -1400,6 +1400,6 @@ but wait, I remember someone advertising 500Gbps protection, Voxility! We can th
 
 So let's do it! I sent an email to my good friend Maria from Voxility but they have to talk to their downstream before nullrouting it :( Hopefully they can expedite the process through their channels of communication!
 
-### This botnet was hosted on IP 176.123.7.193 but was blackholed by Voxility and Trabia 
+This botnet was hosted on IP 176.123.7.193 but was blackholed by Voxility and Trabia 
 
-## New botnet up from the same person, new IP is 176.123.7.128  
+New botnet up from the same person, new IP is 176.123.7.128  
