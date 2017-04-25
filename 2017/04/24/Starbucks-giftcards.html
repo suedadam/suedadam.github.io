@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <title>Starbucks giftcards?</title>
+    <meta name="description" content="" />
+
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="shortcut icon" href="//dosattack.net/themes/Casper/favicon.ico">
+
+    <link rel="stylesheet" type="text/css" href="//dosattack.net/themes/Casper/assets/css/screen.css?v=1.0.0" />
+    <link rel="stylesheet" type="text/css" href="//fonts.googleapis.com/css?family=Merriweather:300,700,700italic,300italic|Open+Sans:700,400" />
+
+    <link rel="canonical" href="http://dosattack.net/2017/04/24/Starbucks-giftcards.html" />
+    
+    <meta property="og:site_name" content="Adam Syed" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Starbucks giftcards?" />
+    <meta property="og:description" content="A while back there was a huge spree of cracking gift cards, it was hilarious to see companies quickly disable their gift card systems (Panera was one I saw a lot of). So, I checked back at a forum I..." />
+    <meta property="og:url" content="http://dosattack.net/2017/04/24/Starbucks-giftcards.html" />
+    <meta property="article:published_time" content="2017-04-24T07:00:00.000Z" />
+    <meta property="article:modified_time" content="2017-04-25T06:47:59.613Z" />
+    
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Starbucks giftcards?" />
+    <meta name="twitter:description" content="A while back there was a huge spree of cracking gift cards, it was hilarious to see companies quickly disable their gift card systems (Panera was one I saw a lot of). So, I checked back at a forum I..." />
+    <meta name="twitter:url" content="http://dosattack.net/2017/04/24/Starbucks-giftcards.html" />
+    
+    <script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "Article",
+    "publisher": "Adam Syed",
+    "author": {
+        "@type": "Person",
+        "name": "Adam Syed",
+        "image": "https://avatars2.githubusercontent.com/u/3879307?v=3",
+        "url": "undefined/author/undefined",
+        "sameAs": "http://dosattack.net/"
+    },
+    "headline": "Starbucks giftcards?",
+    "url": "http://dosattack.net/2017/04/24/Starbucks-giftcards.html",
+    "datePublished": "2017-04-24T07:00:00.000Z",
+    "dateModified": "2017-04-25T06:47:59.613Z",
+    "description": "A while back there was a huge spree of cracking gift cards, it was hilarious to see companies quickly disable their gift card systems (Panera was one I saw a lot of). So, I checked back at a forum I..."
+}
+    </script>
+
+    <meta name="generator" content="Ghost ?" />
+    <link rel="alternate" type="application/rss+xml" title="Adam Syed" href="http://dosattack.net/rss" />
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/default.min.css">
+</head>
+<body class="post-template">
+
+    
+
+
+<header class="main-header post-head no-cover">
+    <nav class="main-nav  clearfix">
+        <a class="back-button icon-arrow-left" href="http://dosattack.net">Home</a>
+        <!-- <a class="subscribe-button icon-feed" href="http://dosattack.net/rss/">Subscribe</a> -->
+    </nav>
+</header>
+
+<main class="content" role="main">
+
+    <article class="post">
+
+        <header class="post-header">
+            <h1 class="post-title">Starbucks giftcards?</h1>
+            <section class="post-meta">
+                <time class="post-date" datetime="2017-04-24">24 April 2017</time> 
+            </section>
+        </header>
+
+        <section class="post-content">
+            <div id="preamble">
+<div class="sectionbody">
+<div class="paragraph">
+<p>A while back there was a huge spree of cracking gift cards, it was hilarious to see companies quickly disable their gift card systems (Panera was one I saw a lot of). So, I checked back at a forum I remember doing a lot of cracking and I saw a rather interesting post. Someone had claimed to crack "a few thousand starbucks accounts", my initial impressions were "well damn&#8230;&#8203;that&#8217;s impressive! Must&#8217;ve at least been a little difficult", and then I looked at it&#8230;&#8203;and yeah&#8230;&#8203;you guessed it&#8230;&#8203;</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="https://s-media-cache-ak0.pinimg.com/originals/6a/88/3b/6a883b94e54fb45ac9b52c98793a0cc9.jpg" alt="6a883b94e54fb45ac9b52c98793a0cc9.jpg">
+</div>
+</div>
+<div class="paragraph">
+<p>When I looked at it, it was a normal form, no authentication or anything. No browser checking with cookie injection, no mandatory session IDs, nothing at all! (After a bit of testing there was a rate limit&#8230;&#8203;but really&#8230;&#8203;you can get past that with a list of proxies). I built up a little PoC to prove my point (didn&#8217;t really test it as it took me like 5 minutes to make).</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/suedadam/StarbucksCrack/blob/master/main.go" class="bare">https://github.com/suedadam/StarbucksCrack/blob/master/main.go</a></p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_what_does_the_poc_do">What does the PoC do!?</h3>
+<div class="paragraph">
+<p>The PoC goes through every combination of 16 digit numbers with every combination of PINs with 8 digits (simple, right?). Now, if you actually cared and wanted actual results instead of just using a ton of proxies for no reason, get a Starbucks gift card and use that as a base! IE: if the CardNumber was 6118845181561915 then start from that and move your way up to 9999999999999999 and do the same with the pin as they probably are starting from a base number as well! Nobody wants to see their card and have their pin be "00000001". If I ever get less lazy then I&#8217;ll make this an actual project that will work but for now lets see what Starbucks has to say.</p>
+</div>
+<div class="sect3">
+<h4 id="_picture_of_the_forum_post">Picture of the forum post:</h4>
+<div class="imageblock">
+<div class="content">
+<img src="https://i.gyazo.com/defd2c69428492bd71655af8b24c051f.png" alt="defd2c69428492bd71655af8b24c051f.png">
+</div>
+</div>
+</div>
+</div>
+        </section>
+
+        <footer class="post-footer">
+
+
+            <figure class="author-image">
+                <a class="img" href="" style="background-image: url(https://avatars2.githubusercontent.com/u/3879307?v=3)"><span class="hidden">Adam Syed's Picture</span></a>
+            </figure>
+
+            <section class="author">
+                <h4><a href="">Adam Syed</a></h4>
+
+                    <p>Read <a href="">more posts</a> by this author.</p>
+                <div class="author-meta">
+                    <span class="author-location icon-location">California</span>
+                    <span class="author-link icon-link"><a href="http://dosattack.net/">http://dosattack.net/</a></span>
+                </div>
+            </section>
+
+
+            <section class="share">
+                <h4>Share this post</h4>
+                <a class="icon-twitter" href="https://twitter.com/share?text=Starbucks%20giftcards%3F&amp;url=http://dosattack.net/2017/04/24/Starbucks-giftcards.html"
+                    onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+                    <span class="hidden">Twitter</span>
+                </a>
+                <a class="icon-facebook" href="https://www.facebook.com/sharer/sharer.php?u=http://dosattack.net/2017/04/24/Starbucks-giftcards.html"
+                    onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+                    <span class="hidden">Facebook</span>
+                </a>
+                <a class="icon-google-plus" href="https://plus.google.com/share?url=http://dosattack.net/2017/04/24/Starbucks-giftcards.html"
+                   onclick="window.open(this.href, 'google-plus-share', 'width=490,height=530');return false;">
+                    <span class="hidden">Google+</span>
+                </a>
+            </section>
+
+        </footer>
+
+
+    </article>
+
+</main>
+
+
+
+    <footer class="site-footer clearfix">
+        <section class="copyright"><a href="http://dosattack.net">Adam Syed</a> &copy; 2017</section>
+        <section class="poweredby">Proudly published with <a href="http://hubpress.io">HubPress</a></section>
+    </footer>
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js?v="></script> <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.9.0/moment-with-locales.min.js?v="></script> <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js?v="></script> 
+      <script type="text/javascript">
+        jQuery( document ).ready(function() {
+          // change date with ago
+          jQuery('ago.ago').each(function(){
+            var element = jQuery(this).parent();
+            element.html( moment(element.text()).fromNow());
+          });
+        });
+
+        hljs.initHighlightingOnLoad();      
+      </script>
+
+    <script type="text/javascript" src="//dosattack.net/themes/Casper/assets/js/jquery.fitvids.js?v=1.0.0"></script>
+    <script type="text/javascript" src="//dosattack.net/themes/Casper/assets/js/index.js?v=1.0.0"></script>
+
+</body>
+</html>
