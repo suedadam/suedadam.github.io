@@ -1,0 +1,22 @@
+= Starbucks giftcards?
+
+
+A while back there was a huge spree of cracking gift cards, it was hilarious to see companies quickly disable their gift card systems (Panera was one I saw a lot of). So, I checked back at a forum I remember doing a lot of cracking and I saw a rather interesting post. Someone had claimed to crack "a few thousand starbucks accounts", my initial impressions were "well damn...that's impressive! Must've at least been a little difficult", and then I looked at it...and yeah...you guessed it...
+
+
+image::https://s-media-cache-ak0.pinimg.com/originals/6a/88/3b/6a883b94e54fb45ac9b52c98793a0cc9.jpg[]
+
+
+When I looked at it, it was a normal form, no authentication or anything. No browser checking with cookie injection, no mandatory session IDs, nothing at all! (After a bit of testing there was a rate limit...but really...you can get past that with a list of proxies). I built up a little PoC to prove my point (didn't really test it as it took me like 5 minutes to make). 
+
+https://github.com/suedadam/StarbucksCrack/blob/master/main.go
+
+
+### What does the PoC do!?
+
+The PoC goes through every combination of 16 digit numbers with every combination of PINs with 8 digits (simple, right?). Now, if you actually cared and wanted actual results instead of just using a ton of proxies for no reason, get a Starbucks gift card and use that as a base! IE: if the CardNumber was 6118845181561915 then start from that and move your way up to 9999999999999999 and do the same with the pin as they probably are starting from a base number as well! Nobody wants to see their card and have their pin be "00000001". If I ever get less lazy then I'll make this an actual project that will work but for now lets see what Starbucks has to say.
+
+#### Picture of the forum post:
+
+image::https://i.gyazo.com/defd2c69428492bd71655af8b24c051f.png[]
+
