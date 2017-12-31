@@ -1,0 +1,6 @@
+= Building an AntiCheating system
+
+
+This is a write up of how I started assisting in an AntiCheating system for the https://www.42.us.org/[school I go to]. 
+
+This isn't so much of how the anti cheating system works but rather a cool guide on how to test your own work 
